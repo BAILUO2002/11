@@ -1,44 +1,55 @@
-/* eslint-disable consistent-return */
 const express = require('express');
 const db = require('../db/connection');
 
-const users = db.get('user');
-
+// Initialize database collection and router
+const usersCollection = db.get('user');
 const router = express.Router();
 
-/* Get all users */
+/**
+ * @route   GET /api/users
+ * @desc    Get all users
+ * @access  Public
+ */
 router.get('/', async (req, res, next) => {
   try {
-    const allUsers = await users.find({});
+    const allUsers = await usersCollection.find({});
     res.json(allUsers);
   } catch (error) {
     next(error);
   }
 });
 
-/* Get all distinct job values from users */
+/**
+ * @route   GET /api/users/jobs
+ * @desc    Get all distinct user job titles
+ * @access  Public
+ */
 router.get('/jobs', async (req, res, next) => {
   try {
-    const jobs = await users.distinct('job');
-    res.json(jobs);
+    const distinctJobs = await usersCollection.distinct('job');
+    res.json(distinctJobs);
   } catch (error) {
     next(error);
   }
 });
 
-/* Get users with IDs within a given range (using query parameters) */
+/**
+ * @route   GET /api/users/range
+ * @desc    Get users by ID range (query params: start, end)
+ * @access  Public
+ */
 router.get('/range', async (req, res, next) => {
   try {
     const { start, end } = req.query;
-    
+
+    // Validate required parameters
     if (!start || !end) {
-      const error = new Error('Both start and end query parameters are required');
       res.status(400);
-      return next(error);
+      return next(new Error('Bad request: Both start and end parameters are required'));
     }
 
-    const usersInRange = await users.find({
-      _id: { $gte: start, $lte: end },
+    const usersInRange = await usersCollection.find({
+      _id: { $gte: start, $lte: end }
     });
 
     res.json(usersInRange);
@@ -47,18 +58,19 @@ router.get('/range', async (req, res, next) => {
   }
 });
 
-/* Get a user by username */
+/**
+ * @route   GET /api/users/username/:username
+ * @desc    Get a single user by username
+ * @access  Public
+ */
 router.get('/username/:username', async (req, res, next) => {
   try {
     const { username } = req.params;
-    const user = await users.findOne({
-      username,
-    });
+    const user = await usersCollection.findOne({ username });
 
     if (!user) {
-      const error = new Error('User does not exist');
       res.status(404);
-      return next(error);
+      return next(new Error('User not found'));
     }
 
     res.json(user);
@@ -67,18 +79,19 @@ router.get('/username/:username', async (req, res, next) => {
   }
 });
 
-/* Get a user by _id */
+/**
+ * @route   GET /api/users/:id
+ * @desc    Get a single user by _id
+ * @access  Public
+ */
 router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const user = await users.findOne({
-      _id: id,
-    });
+    const user = await usersCollection.findOne({ _id: id });
 
     if (!user) {
-      const error = new Error('User does not exist');
       res.status(404);
-      return next(error);
+      return next(new Error('User not found'));
     }
 
     res.json(user);
